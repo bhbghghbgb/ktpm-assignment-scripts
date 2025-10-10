@@ -58,12 +58,13 @@ def sanitize_latex(text):
         "}": r"\}",  # Right brace
         "~": r"\textasciitilde{}",  # Tilde
         "^": r"\textasciicircum{}",  # Caret
-        "_": r"\_",  # Underscore
+        "|": r"\textbar{}",  # pipe
+        # "_": r"\_",  # Underscore
     }
 
     # Punctuation characters that should allow line breaks if followed by a non-space
     # This helps LaTeX break long strings like "obj.method()" or "1,2,3" more gracefully
-    breakable_punct = ".,/:-"
+    breakable_punct = ".,/:-_"
 
     out_parts = []  # List to collect processed characters
 
@@ -79,8 +80,12 @@ def sanitize_latex(text):
 
         # If character is breakable punctuation and followed by a non-space,
         # keep the punctuation and add \allowbreak{} to hint LaTeX to break line here
+        # Make punctuation and underscores breakable
         if ch in breakable_punct and next_ch and next_ch != " ":
-            out_parts.append(f"{ch}\\allowbreak{{}}")
+            if ch == "_":
+                out_parts.append(r"\_\allowbreak{}")
+            else:
+                out_parts.append(f"{ch}\\allowbreak{{}}")
             continue
 
         # Default case: keep character as-is
@@ -101,41 +106,43 @@ def find_start_row(df):
 
 def extract_metadata(df):
     """
-    Extract metadata from the top rows of a review sheet.
+    Extract metadata as ordered pairs for a LaTeX tabular layout.
     Handles:
-    - Tabs vs spaces correctly (tab = cell separation).
-    - Multi-line metadata (when the key cell is blank).
-    - Auto-appends ':' to key if missing.
-    - Joins multi-line values with ' - '.
-    - Returns dict {key: [list of values]} for later LaTeX alignment.
+      - Multi-row metadata entries (continuation rows with blank key)
+      - Tabs correctly (each tab -> new cell)
+      - Appends ':' if missing in key
+      - Replaces empty values with '---'
+      - Joins multiple values on the same row with ' - '
+    Returns: list of tuples (key, [values])
     """
-    metadata = {}
+    metadata = []
     current_key = None
+    current_values = []
 
     for _, row in df.iterrows():
-        # Normalize: treat tabs properly
+        # Normalize each cell (strip, replace NaN with "")
         cells = [str(x).strip() if pd.notna(x) else "" for x in row]
         if not any(cells):
             continue
 
         key = cells[0].strip()
-        values = [v for v in cells[1:] if v]
+        # join multiple filled cells (same row) with " - "
+        joined_value = " - ".join(v for v in cells[1:] if v).strip()
+        if not joined_value:
+            joined_value = "---"
 
-        if key:
-            # New key
+        if key:  # new key starts
+            if current_key:
+                metadata.append((current_key, current_values))
             if not key.endswith(":"):
                 key += ":"
-            value = " ".join(values) if values else "---"
-            metadata[key] = [value]
             current_key = key
-        elif current_key:
-            # Continuation of previous key
-            value = " ".join(values) if values else "---"
-            metadata[current_key].append(value)
+            current_values = [joined_value]
+        elif current_key:  # continuation line (same metadata)
+            current_values.append(joined_value)
 
-    # Join multi-line values with " - "
-    for k in list(metadata.keys()):
-        metadata[k] = " - ".join(metadata[k])
+    if current_key:
+        metadata.append((current_key, current_values))
 
     return metadata
 
@@ -255,17 +262,22 @@ def process_sheet(sheet_name, df):
     lines.append(f"\\subsection{{{module_title}}}")
     lines.append("\\noindent\\rule{\\textwidth}{0.4pt}\n")
 
-    def field(label, key):
-        val = sanitize_latex(metadata.get(key, "---"))
-        lbl = sanitize_latex(label)
-        lines.append(f"\\hangindent=2em \\textbf{{{lbl}:}} {val}\\\\[0.3em]")
-
-    field("Project Code", "Project Code:")
-    field("Version of work product", "Version of the work product:")
-    field("Reviewer(s)", "Reviewer(s):")
-    field("Review Date", "Review date & time:")
-    field("Work Product Size (LoC)", "Work product' size (LoC)")
-    field("Effort (man-hour)", "Effort spent on review (man-hour):")
+    # --- Metadata table ---
+    lines.append("\\begin{flushleft}")
+    lines.append(
+        "\\begin{tabular}{@{}>{\\raggedright\\arraybackslash}p{0.34\\textwidth} >{\\raggedright\\arraybackslash}p{0.62\\textwidth}@{}}"
+    )  # Adjust widths for A4
+    for key, values in metadata:
+        key_tex = f"\\textbf{{{sanitize_latex(key)}}}"
+        for i, val in enumerate(values):
+            val_tex = sanitize_latex(val)
+            if i == 0:
+                lines.append(f"{key_tex} & {val_tex} \\\\")
+            else:
+                lines.append(f" & {val_tex} \\\\")
+    lines.append("\\end{tabular}")
+    lines.append("\\end{flushleft}")
+    lines.append("\\vspace{1em}")
 
     lines.append("\n\\vspace{1em}")
     lines.append("% Reviewer-specific tables (no reviewer column)")
@@ -395,11 +407,16 @@ if inputs:
 generate_codes_table(CODES_MAPPING_RAW, codes_table_file)
 
 # Copy master template if it exists (safe)
-master_src = Path("main_report.tex")
-if master_src.exists():
-    shutil.copy(master_src, export_dir / "main_report.tex")
-    print(f"📄 Copied master template to {export_dir / 'main_report.tex'}")
-else:
-    print("ℹ️  main_report.tex not found; skipping copy (place one in cwd to copy).")
+files_to_copy = ["main_report.tex", "main.tex"]
+
+for filename in files_to_copy:
+    src = Path(filename)
+    if src.exists():
+        dst = export_dir / src.name
+        shutil.copy(src, dst)
+        print(f"📄 Copied {src} to {dst}")
+    else:
+        print(f"ℹ️  {src} not found; skipping copy.")
+
 
 print("Done.")
