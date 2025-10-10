@@ -1,0 +1,77 @@
+% ===============================================================
+% Code Review Report - Master Document
+% ===============================================================
+
+\documentclass[12pt,a4paper]{article}
+
+% ---------- Packages ----------
+\usepackage[vietnamese]{babel}
+\usepackage[margin=1in]{geometry}
+\usepackage{longtable,booktabs,array,setspace}
+\usepackage{titlesec}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\setstretch{1.15}
+
+% ---------- Formatting ----------
+\titleformat{\section}{\large\bfseries}{\thesection}{1em}{}
+\titleformat{\subsection}{\normalsize\bfseries}{\thesubsection}{1em}{}
+
+\begin{document}
+
+% ===============================================================
+% Cover Page
+% (Edit this section freely)
+% ===============================================================
+\begin{titlepage}
+    \centering
+    {\Huge \textbf{Code Review Report}}\\[1.5cm]
+    {\Large Project: Software Engineering Assignment 1}\\[1cm]
+    {\large Prepared by:}\\
+    {\large Team XYZ}\\[0.3cm]
+    {\large Date: \today}\\[3cm]
+    \vfill
+    {\large \textit{This report contains detailed peer code reviews for all modules.}}
+\end{titlepage}
+
+% ===============================================================
+% Table of Contents
+% ===============================================================
+\tableofcontents
+\newpage
+
+% ===============================================================
+% Section 1: Review Summary
+% (You can add graphs, statistics, or summary tables here)
+% ===============================================================
+\section{Review Summary}
+
+\subsection{Overview}
+This section provides an overall analysis of review activity across modules.
+
+\subsection{Reviewer Statistics}
+% TODO: Add chart or table of reviewer contributions
+
+\subsection{Common Issues}
+% TODO: Summarize recurring patterns found during reviews
+
+\newpage
+
+\section{Check Code Reference}
+\input{codes_table.tex}
+\newpage
+
+% ===============================================================
+% Section 2: Individual Module Reviews
+% (Each file will begin on a new page automatically)
+% ===============================================================
+\section{Individual Module Reviews}
+
+% --- Auto-generated list of \input commands ---
+% This file is automatically written by export_reviews.py
+\input{reviews_list.tex}
+
+% ===============================================================
+% End of Document
+% ===============================================================
+\end{document}
