@@ -33,32 +33,62 @@ sections_dir.mkdir(exist_ok=True)
 
 def sanitize_latex(text):
     """
-    Escape LaTeX special characters in arbitrary text safely.
-    - Backslash first.
-    - Collapse newlines into spaces.
+    Escape LaTeX special characters and make certain punctuation breakable.
+    This function processes the input string character-by-character to avoid
+    re-escaping characters introduced by earlier replacements.
     """
+
+    # Handle None or NaN input gracefully
     if text is None or (isinstance(text, float) and pd.isna(text)):
         return ""
-    s = str(text)
-    s = s.replace("\r\n", "\n").replace("\r", "\n").replace("\n", " ")
-    s = s.strip()
-    # backslash first
-    s = s.replace("\\", r"\textbackslash{}")
-    replacements = {
-        "&": r"\&",
-        "%": r"\%",
-        "$": r"\$",
-        "#": r"\#",
-        "_": r"\_",
-        "{": r"\{",
-        "}": r"\}",
-        "~": r"\textasciitilde{}",
-        "^": r"\textasciicircum{}",
+
+    # Convert input to string and normalize newlines to single spaces
+    # This helps avoid unexpected line breaks in LaTeX output
+    s = str(text).replace("\r\n", " ").replace("\r", " ").replace("\n", " ").strip()
+
+    # Map of LaTeX special characters to their escaped versions
+    # These characters have special meaning in LaTeX and must be escaped to display correctly
+    escape_map = {
+        "\\": r"\textbackslash{}",  # Backslash
+        "&": r"\&",  # Ampersand
+        "%": r"\%",  # Percent
+        "$": r"\$",  # Dollar sign
+        "#": r"\#",  # Hash
+        "{": r"\{",  # Left brace
+        "}": r"\}",  # Right brace
+        "~": r"\textasciitilde{}",  # Tilde
+        "^": r"\textasciicircum{}",  # Caret
+        "_": r"\_",  # Underscore
     }
-    for k, v in replacements.items():
-        s = s.replace(k, v)
-    s = re.sub(r"\s+", " ", s)
-    return s
+
+    # Punctuation characters that should allow line breaks if followed by a non-space
+    # This helps LaTeX break long strings like "obj.method()" or "1,2,3" more gracefully
+    breakable_punct = ".,/:-"
+
+    out_parts = []  # List to collect processed characters
+
+    # Iterate through each character in the string
+    for i, ch in enumerate(s):
+        # Look ahead to the next character (if any)
+        next_ch = s[i + 1] if i + 1 < len(s) else ""
+
+        # If character is a LaTeX special character, escape it using the map
+        if ch in escape_map:
+            out_parts.append(escape_map[ch])
+            continue
+
+        # If character is breakable punctuation and followed by a non-space,
+        # keep the punctuation and add \allowbreak{} to hint LaTeX to break line here
+        if ch in breakable_punct and next_ch and next_ch != " ":
+            out_parts.append(f"{ch}\\allowbreak{{}}")
+            continue
+
+        # Default case: keep character as-is
+        out_parts.append(ch)
+
+    # Join all parts and collapse multiple spaces into one
+    result = re.sub(r"\s+", " ", "".join(out_parts)).strip()
+    return result
 
 
 def find_start_row(df):
