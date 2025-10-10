@@ -13,11 +13,12 @@ Changes:
  - Generates a codes_table.tex (single lookup table of Check Code -> Description)
    using the mapping provided by the user.
 """
-import shutil
-import pandas as pd
-from pathlib import Path
 import re
+import shutil
 import sys
+from pathlib import Path
+
+import pandas as pd
 
 # === Configuration ===
 export_dir = Path("output_tex")
@@ -136,7 +137,8 @@ def make_reviewer_tables(grouped_rows):
         ">{\\raggedright\\arraybackslash}p{0.44\\textwidth}"
     )
     for reviewer, rows in grouped_rows.items():
-        lines.append(f"\\subsubsection*{{{sanitize_latex(reviewer)}}}")
+        reviewer_title = f"Reviewer: {sanitize_latex(reviewer)}"
+        lines.append(f"\\subsubsection{{{reviewer_title}}}")
         lines.append("\\vspace{0.3em}")
         lines.append(f"\\begin{{longtable}}{{{col_spec}}}")
         lines.append("\\toprule")
@@ -199,7 +201,8 @@ def process_sheet(sheet_name, df):
         "% --- Begin section for sheet: " + sanitize_latex(sheet_name) + " ---"
     )
     lines.append("\\clearpage")
-    lines.append(f"\\subsection*{{{sanitize_latex(sheet_name)}}}")
+    module_title = sanitize_latex(sheet_name)
+    lines.append(f"\\subsection{{{module_title}}}")
     lines.append("\\noindent\\rule{\\textwidth}{0.4pt}\n")
 
     def field(label, key):
@@ -234,50 +237,78 @@ CODES_MAPPING_RAW = Path("codes_mapping.txt").read_text(encoding="utf-8")
 
 def generate_codes_table(raw_text, out_path):
     """
-    Parse the raw mapping and write codes_table.tex with numeric codes and descriptions.
-    Only lines starting with an integer code are added.
+    Parse the raw mapping and write codes_table.tex with sections and subsections.
+    Lines starting with Roman numerals (I, II, III, etc.) define new sections.
+    Lines starting with '#' define subsections.
+    Lines starting with digits are table rows.
     """
     lines = raw_text.strip().splitlines()
-    parsed = []
-    for ln in lines:
-        # strip leading/trailing whitespace and tabs
-        s = ln.strip()
-        if not s:
-            continue
-        # match lines that begin with a number then whitespace then rest
-        m = re.match(r"^(\d+)\s+(.*)$", s)
-        if m:
-            code = m.group(1)
-            desc = m.group(2).strip()
-            parsed.append((code, desc))
-    # write codes_table.tex
-    out_lines = []
-    out_lines.append("% --- Check Code lookup table (auto-generated) ---")
-    out_lines.append("\\section*{Check Code Reference}")
-    out_lines.append(
+    current_section = None
+    current_subsection = None
+    tex = []
+    table_open = False  # Track whether a longtable is currently open
+
+    tex.append("% --- Check Code lookup table (auto-generated) ---")
+    tex.append("\\section{Check Code Reference}")
+    tex.append(
         "\\noindent This table lists the check codes used in the per-file reviews."
     )
-    out_lines.append("\\vspace{0.5em}")
-    out_lines.append(
-        "\\begin{longtable}{>{\\raggedright\\arraybackslash}p{0.12\\textwidth} >{\\raggedright\\arraybackslash}p{0.84\\textwidth}}"
-    )
-    out_lines.append("\\toprule")
-    out_lines.append("\\textbf{Check Code} & \\textbf{Check code description} \\\\")
-    out_lines.append("\\midrule")
-    out_lines.append("\\endfirsthead")
-    out_lines.append("\\toprule")
-    out_lines.append("\\textbf{Check Code} & \\textbf{Check code description} \\\\")
-    out_lines.append("\\midrule")
-    out_lines.append("\\endhead")
-    out_lines.append("\\midrule")
-    out_lines.append("\\multicolumn{2}{r}{\\textit{Continued on next page}} \\\\")
-    out_lines.append("\\endfoot")
-    out_lines.append("\\bottomrule")
-    out_lines.append("\\endlastfoot")
-    for code, desc in parsed:
-        out_lines.append(f"{sanitize_latex(code)} & {sanitize_latex(desc)} \\\\")
-    out_lines.append("\\end{longtable}")
-    out_path.write_text("\n".join(out_lines) + "\n", encoding="utf-8")
+    tex.append("\\vspace{0.5em}")
+
+    for raw in lines:
+        s = raw.strip()
+        if not s:
+            continue
+
+        # --- Section (Roman numeral) ---
+        if re.match(r"^[IVXLCDM]+\s*[-–]", s):
+            if table_open:
+                tex.append("\\bottomrule")
+                tex.append("\\end{longtable}")
+                table_open = False
+            current_section = s
+            current_subsection = None
+            tex.append(f"\\subsection{{{sanitize_latex(current_section)}}}")
+            continue
+
+        # --- Subsection (starts with #) ---
+        if s.startswith("#"):
+            if table_open:
+                tex.append("\\bottomrule")
+                tex.append("\\end{longtable}")
+                table_open = False
+            current_subsection = s.lstrip("#").strip()
+            tex.append(f"\\subsubsection*{{{sanitize_latex(current_subsection)}}}")
+            continue
+
+        # --- Table rows (start with a number) ---
+        m = re.match(r"^(\d+)\s+(.*)$", s)
+        if m:
+            if not table_open:
+                tex.append(
+                    "\\begin{longtable}{>{\\raggedright\\arraybackslash}p{0.12\\textwidth} >{\\raggedright\\arraybackslash}p{0.84\\textwidth}}"
+                )
+                tex.append("\\toprule")
+                tex.append(
+                    "\\textbf{Check Code} & \\textbf{Check code description} \\\\"
+                )
+                tex.append("\\midrule")
+                table_open = True
+
+            code = sanitize_latex(m.group(1))
+            desc = sanitize_latex(m.group(2))
+            tex.append(f"{code} & {desc} \\\\")
+            continue
+
+        # Ignore unrecognized lines silently
+        continue
+
+    # --- Close last table if still open ---
+    if table_open:
+        tex.append("\\bottomrule")
+        tex.append("\\end{longtable}")
+
+    out_path.write_text("\n".join(tex) + "\n", encoding="utf-8")
     print(f"📄 Created codes lookup: {out_path}")
 
 
