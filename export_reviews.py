@@ -7,7 +7,7 @@ Reads CodeReviews.xlsx (multiple sheets). For each sheet whose A1 contains
 
 Changes:
  - Reviewer column is omitted from the table; rows are grouped by reviewer and
-   each reviewer becomes a \subsubsection*{Reviewer Name}.
+   each reviewer becomes a \\subsubsection*{Reviewer Name}.
  - The table no longer includes the "Check code description" column.
  - Columns are left-aligned only using ragged-right p{<fraction>\textwidth}.
  - Generates a codes_table.tex (single lookup table of Check Code -> Description)
@@ -71,22 +71,42 @@ def find_start_row(df):
 
 def extract_metadata(df):
     """
-    Build metadata mapping from rows before the table header.
-    Keys come from first column; values from the rest of the row (joined).
+    Extract metadata from the top rows of a review sheet.
+    Handles:
+    - Tabs vs spaces correctly (tab = cell separation).
+    - Multi-line metadata (when the key cell is blank).
+    - Auto-appends ':' to key if missing.
+    - Joins multi-line values with ' - '.
+    - Returns dict {key: [list of values]} for later LaTeX alignment.
     """
     metadata = {}
+    current_key = None
+
     for _, row in df.iterrows():
-        if pd.isna(row[0]):
+        # Normalize: treat tabs properly
+        cells = [str(x).strip() if pd.notna(x) else "" for x in row]
+        if not any(cells):
             continue
-        key = str(row[0]).strip()
-        if not key:
-            continue
-        parts = [
-            str(x).strip() for x in row[1:] if not (pd.isna(x) or str(x).strip() == "")
-        ]
-        if not parts:
-            continue
-        metadata[key] = " ".join(parts)
+
+        key = cells[0].strip()
+        values = [v for v in cells[1:] if v]
+
+        if key:
+            # New key
+            if not key.endswith(":"):
+                key += ":"
+            value = " ".join(values) if values else "---"
+            metadata[key] = [value]
+            current_key = key
+        elif current_key:
+            # Continuation of previous key
+            value = " ".join(values) if values else "---"
+            metadata[current_key].append(value)
+
+    # Join multi-line values with " - "
+    for k in list(metadata.keys()):
+        metadata[k] = " - ".join(metadata[k])
+
     return metadata
 
 
@@ -123,7 +143,7 @@ def make_reviewer_tables(grouped_rows):
     """
     Given grouped_rows: reviewer -> rows, produce LaTeX lines.
     Per reviewer:
-      - Write \subsubsection*{Reviewer Name}
+      - Write \\subsubsection*{Reviewer Name}
       - Short table with columns: Code | Line | Comment | Suggestion
     Column widths use fractions of \textwidth and left-aligned raggedright.
     """
@@ -207,7 +227,8 @@ def process_sheet(sheet_name, df):
 
     def field(label, key):
         val = sanitize_latex(metadata.get(key, "---"))
-        lines.append(f"\\textbf{{{sanitize_latex(label)}}}: {val}\\\\[0.3em]")
+        lbl = sanitize_latex(label)
+        lines.append(f"\\hangindent=2em \\textbf{{{lbl}:}} {val}\\\\[0.3em]")
 
     field("Project Code", "Project Code:")
     field("Version of work product", "Version of the work product:")
@@ -249,7 +270,6 @@ def generate_codes_table(raw_text, out_path):
     table_open = False  # Track whether a longtable is currently open
 
     tex.append("% --- Check Code lookup table (auto-generated) ---")
-    tex.append("\\section{Check Code Reference}")
     tex.append(
         "\\noindent This table lists the check codes used in the per-file reviews."
     )
@@ -268,7 +288,9 @@ def generate_codes_table(raw_text, out_path):
                 table_open = False
             current_section = s
             current_subsection = None
-            tex.append(f"\\subsection{{{sanitize_latex(current_section)}}}")
+            tex.append(
+                f"\\subsection*{{{sanitize_latex(current_section)}}}"
+            )  # not in TOC
             continue
 
         # --- Subsection (starts with #) ---
