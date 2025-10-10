@@ -13,6 +13,7 @@ Changes:
  - Generates a codes_table.tex (single lookup table of Check Code -> Description)
    using the mapping provided by the user.
 """
+import csv
 import re
 import shutil
 import sys
@@ -372,11 +373,45 @@ def generate_codes_table(raw_text, out_path):
         tex.append("\\bottomrule")
         tex.append("\\end{longtable}")
 
-    out_path.write_text("\n".join(tex) + "\n", encoding="utf-8")
+    out_path.write_text(apply_redactions("\n".join(tex) + "\n"), encoding="utf-8")
     print(f"📄 Created codes lookup: {out_path}")
 
 
+def apply_redactions(text):
+    if pattern:
+        return pattern.sub(redactor_func, text)
+    else:
+        return text
+
+
 # === Main execution ===
+redaction_file = Path("redactions.csv")
+redaction_map = {}
+
+if redaction_file.exists():
+    with redaction_file.open(encoding="utf-8") as f:
+        reader = csv.reader(f)
+        for row in reader:
+            if len(row) < 2:
+                continue
+            orig, repl = row[0], row[1]
+            redaction_map[re.escape(orig)] = repl
+
+
+if redaction_map:
+    # Build regex of all escaped original strings, joined by |
+    pattern = re.compile("|".join(sorted(redaction_map, key=len, reverse=True)))
+
+    def redactor_func(match):
+        return redaction_map[re.escape(match.group(0))]
+
+else:
+    pattern = None
+
+    def redactor_func(match):
+        return match.group(0)
+
+
 try:
     excel = pd.ExcelFile(input_file)
 except FileNotFoundError:
@@ -394,13 +429,15 @@ for sheet in excel.sheet_names:
     if tex_content:
         safe_name = re.sub(r"[^A-Za-z0-9_-]+", "_", sheet)
         output_path = sections_dir / f"{safe_name}.tex"
-        output_path.write_text(tex_content, encoding="utf-8")
+        output_path.write_text(apply_redactions(tex_content), encoding="utf-8")
         inputs.append(f"\\input{{sections/{safe_name}.tex}}")
         print(f"✅ Exported {output_path}")
 
 # Write reviews_list.tex
 if inputs:
-    review_list_file.write_text("\n".join(inputs) + "\n", encoding="utf-8")
+    review_list_file.write_text(
+        apply_redactions("\n".join(inputs) + "\n"), encoding="utf-8"
+    )
     print(f"📄 Created {review_list_file}")
 
 # Generate codes_table
@@ -411,12 +448,25 @@ files_to_copy = ["main_report.tex", "main.tex"]
 
 for filename in files_to_copy:
     src = Path(filename)
-    if src.exists():
-        dst = export_dir / src.name
-        shutil.copy(src, dst)
-        print(f"📄 Copied {src} to {dst}")
-    else:
+    dst = export_dir / src.name
+    if not src.exists():
         print(f"ℹ️  {src} not found; skipping copy.")
+        continue
+
+    # Simple heuristic for text files:
+    if src.suffix.lower() in {".tex", ".txt", ".md"}:
+        try:
+            content = src.read_text(encoding="utf-8")
+            redacted = apply_redactions(content)
+            dst.write_text(redacted, encoding="utf-8")
+            print(f"📄 Copied and redacted {src} to {dst}")
+        except Exception as e:
+            print(f"⚠️ Failed to redact {src}, copying raw: {e}")
+            shutil.copy(src, dst)
+    else:
+        # Binary or unknown file: copy as-is
+        shutil.copy(src, dst)
+        print(f"📄 Copied {src} to {dst} (binary/no redaction)")
 
 
 print("Done.")
