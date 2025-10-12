@@ -1,0 +1,15 @@
+Code Review Report,Unnamed: 1,Unnamed: 2,Unnamed: 3,Unnamed: 4
+,,,,
+Project Code: [Project name] / [File name],,,,
+Version of the work product:,,,,
+Reviewer(s):,Nguyễn Văn A,,xxx,
+,Trần Thị B,,yyy,
+,,,,
+Review date & time:,,,,
+Work product' size (LoC),,,,
+Effort spent on review (man-hour):,,,,
+,,,,
+Check code,Check code Description,Line,Comment,Suggestion / Fix ?
+6, Are descriptive variable and constant names used in accord with naming conventions?,23,variable: AVarThatNamedWeird,aVarThatNamedWeird
+28," Has an ""&"" inadvertently been interchanged with a ""&&"" or a ""|"" for a ""||""?",32,if (a & b),if (a && b)
+58, Can a computation be moved outside a loop?,41,var: the_x001D_Lists và theListss,nên đổi theListss thành theGlobalLists

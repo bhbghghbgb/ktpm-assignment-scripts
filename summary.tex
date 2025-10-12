@@ -1,0 +1,67 @@
+\section{Review Summary}
+
+\subsection{Overview}
+Trong quá trình kiểm thử và review mã nguồn của Assignment 1, nhóm đã tiến hành rà soát toàn bộ các module Java liên quan đến chức năng đặt hàng, quản lý người dùng, thống kê và mã hoá mật khẩu.  
+Mục tiêu là phát hiện các lỗi sai logic, vấn đề thiết kế và mức độ tuân thủ coding convention, nhằm đảm bảo tính nhất quán và chất lượng phần mềm trước khi tích hợp.
+
+\subsection{Reviewer Statistics}
+Bảng dưới đây trình bày danh sách các thành viên trong nhóm, vai trò, tỷ lệ đóng góp và số lượng file được phụ trách trong quá trình review:
+
+\begin{longtable}{|c|l|l|c|c|c|}
+\hline
+\textbf{No.} & \textbf{Family name} & \textbf{First name} & \textbf{Student Code} & \textbf{Role} & \textbf{Contribution} \\
+\hline
+1 & [S.Name 2.1] & [S.Name 1.2] & [Student Code 1] & [Role Redacted] & [XX.XX \%] \\
+\hline
+2 & [S.Name 2.1] & [S.Name 2.2] & [Student Code 2] & [Role Redacted] & [XX.XX \%] \\
+\hline
+3 & [S.Name 3.1] & [S.Name 3.2] & [Student Code 3] & [Role Redacted] & [XX.XX \%] \\
+\hline
+4 & [S.Name 4.1] & [S.Name 4.2] & [Student Code 4] & [Role Redacted] & [XX.XX \%] \\
+\hline
+5 & [S.Name 5.1] & [S.Name 5.2] & [Student Code 5] & [Role Redacted] & [XX.XX \%] \\
+\hline
+6 & [S.Name 6.1] & [S.Name 6.2] & [Student Code 6] & [Role Redacted] & [XX.XX \%] \\
+\hline
+\end{longtable}
+
+\noindent
+Nhìn chung, mức độ phân công giữa các thành viên là tương đối đồng đều.  
+
+\subsection{Common Issues}
+Tần suất xuất hiện của các lỗi và tiêu chí kiểm tra phổ biến được thống kê trong bảng sau:
+
+\begin{longtable}{|c|c|c|p{9cm}|}
+\hline
+\textbf{Rank} & \textbf{Check Code} & \textbf{Frequency} & \textbf{Description} \\
+\hline
+1 & 45 & 20 & Does every method, class, and file have an appropriate header comment? \\
+\hline
+2 & 15 & 19 & Is every method parameter value checked before being used? \\
+\hline
+3 & 6 & 16 & Are descriptive variable and constant names used in accord with naming conventions? \\
+\hline
+4 & 19 & 15 & For every object or array reference: Is the value certain to be non-null? \\
+\hline
+5 & 37 & 14 & Are all exceptions handled appropriately? \\
+\hline
+\end{longtable}
+
+\noindent
+Dựa trên bảng trên, các lỗi thường gặp tập trung vào:
+\begin{itemize}
+    \item \textbf{Thiếu chú thích và mô tả hàm/lớp:} Chiếm tần suất cao nhất, ảnh hưởng đến khả năng đọc hiểu mã.
+    \item \textbf{Kiểm tra tham số đầu vào:} Một số hàm chưa kiểm tra điều kiện null hoặc phạm vi giá trị.
+    \item \textbf{Quy tắc đặt tên:} Còn xuất hiện nhiều tên biến/hàm không tuân thủ chuẩn camelCase.
+    \item \textbf{Xử lý ngoại lệ:} Một số phương thức chưa có khối try–catch phù hợp.
+\end{itemize}
+
+Nhìn chung, kết quả review cho thấy chất lượng mã đạt mức tốt, các vấn đề chủ yếu là về \textit{code convention} và \textit{error handling}, có thể được cải thiện dễ dàng trong giai đoạn refactor.
+
+\subsection{Team meeting}
+% \includegraphics[width=15cm]{meet1.png}\\
+% \includegraphics[width=15cm]{meet2.png}\\
+% \includegraphics[width=15cm]{meet3.png}\\
+\centering\fbox{\parbox[c]{14.8cm}{\rule{0pt}{8.4375cm}\centering \bfseries Redacted (16:9)}}\\[0.5cm]
+\centering\fbox{\parbox[c]{14.8cm}{\rule{0pt}{8.4375cm}\centering \bfseries Redacted (16:9)}}\\[0.5cm]
+\centering\fbox{\parbox[c]{14.8cm}{\rule{0pt}{8.4375cm}\centering \bfseries Redacted (16:9)}}\\[0.5cm]

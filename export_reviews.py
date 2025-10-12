@@ -444,7 +444,7 @@ if inputs:
 generate_codes_table(CODES_MAPPING_RAW, codes_table_file)
 
 # Copy master template if it exists (safe)
-files_to_copy = ["main_report.tex", "main.tex"]
+files_to_copy = ["main_report.tex", "main.tex", "summary.tex", "cover_page.tex"]
 
 for filename in files_to_copy:
     src = Path(filename)
