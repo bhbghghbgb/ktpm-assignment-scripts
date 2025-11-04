@@ -10,8 +10,12 @@ import java.util.Optional;
 
 public interface IProductService {
     ProductResponseDTO createProduct(ProductCreateDTO createDTO);
+
     Optional<ProductResponseDTO> getProduct(Long id);
+
     ProductResponseDTO updateProduct(Long id, ProductUpdateDTO updateDTO);
+
     void deleteProduct(Long id);
+
     Page<ProductResponseDTO> getAllProducts(Pageable pageable);
 }
