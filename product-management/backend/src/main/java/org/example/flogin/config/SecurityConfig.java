@@ -23,14 +23,6 @@ import org.springframework.web.filter.CorsFilter;
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
-
-    private final JwtAuthenticationFilter jwtAuthenticationFilter;
-
-    // Inject filter (bạn cần tạo lớp này - xem mục 1.4)
-    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
-        this.jwtAuthenticationFilter = jwtAuthenticationFilter;
-    }
-
     /**
      * 1. Cấu hình UserDetailsService (Giả định In-memory User)
      * Thiết lập tài khoản cứng theo yêu cầu: testuser/Test123
@@ -50,7 +42,7 @@ public class SecurityConfig {
      * 2. Cấu hình HTTP Security (Phân quyền API)
      */
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthenticationFilter jwtAuthenticationFilter) throws Exception {
         return http
             .csrf(AbstractHttpConfigurer::disable) // Tắt CSRF (Thường dùng cho Stateless API)
             .cors(cors -> cors.configurationSource(corsConfigurationSource())) // Áp dụng CORS
