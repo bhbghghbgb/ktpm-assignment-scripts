@@ -37,8 +37,8 @@ public class AuthService implements IAuthService {
     public boolean validateUser(String username, String password) {
         // Phương thức này sẽ được TDD/Kiểm thử sau, hiện tại chỉ là placeholder.
         // Có thể dùng để kiểm tra các luật như: độ dài password, format username,...
-        if (username == null || username.length() < 5) return false;
-        if (password == null || password.length() < 8) return false;
+//        if (username == null || username.length() < 5) return false;
+//        if (password == null || password.length() < 8) return false;
         return true;
     }
 }
