@@ -1,10 +1,10 @@
-package org.example.backend;
+package org.example.flogin;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class BackendApplicationTests {
+class FloginApplicationTests {
 
     @Test
     void contextLoads() {
